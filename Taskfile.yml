@@ -1,0 +1,51 @@
+version: '3'
+
+tasks:
+  mod:
+    desc: "Go mod tidy and download"
+    cmds:
+      - go mod tidy
+      - go mod download
+      
+  build-api:
+    desc: "Build API"
+    deps:
+      - mod
+    cmds:
+      - go build -o build/api.exe cmd/api/main.go
+
+  build-dbm:
+    desc: "Build DBM"
+    deps:
+      - mod
+    cmds:
+      - go build -o build/dbm.exe cmd/dbm/main.go
+
+  run-deps:
+    desc: "Run dependencies"
+    cmds:
+      - docker-compose up db -d
+
+  upgrade-db:
+    desc: "Upgrade DB"
+    deps:
+      - build-dbm
+      - run-deps
+    cmds:
+      - ./build/dbm.exe
+
+  run-api:
+    desc: "Run API"
+    deps:
+      - build-api
+      - run-deps
+    cmds:
+      - ./build/api.exe
+
+  e2e:
+    desc: "Run e2e tests"
+    dir: ./internal/tests
+    cmds:
+      - go mod tidy
+      - go mod download
+      - go test
