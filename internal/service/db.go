@@ -23,6 +23,7 @@ func getSleepDiaryEntryById(db *sql.DB, id int64) (SleepDiaryEntry, error) {
 	err := row.Scan(
 		&entry.Id,
 		&entry.AccountUuid,
+		&entry.Timezone,
 		&entry.InBedAt,
 		&entry.TriedToSleepAt,
 		&entry.SleepDelayInMin,
@@ -62,6 +63,7 @@ func getSleepDiaryEntriesByFilter(db *sql.DB, filter api.SleepDiaryFilterDto) ([
 		err := rows.Scan(
 			&entry.Id,
 			&entry.AccountUuid,
+			&entry.Timezone,
 			&entry.InBedAt,
 			&entry.TriedToSleepAt,
 			&entry.SleepDelayInMin,
@@ -98,9 +100,9 @@ func buildWhereClause(filter api.SleepDiaryFilterDto) (string, []interface{}) {
 	var args []interface{}
 	argPos := 1
 
-	if len(filter.AccountUuids) > 0 {
-		placeholders := make([]string, len(filter.AccountUuids))
-		for i, uuid := range filter.AccountUuids {
+	if len(filter.AccountUuid) > 0 {
+		placeholders := make([]string, len(filter.AccountUuid))
+		for i, uuid := range filter.AccountUuid {
 			placeholders[i] = fmt.Sprintf("$%d", argPos)
 			args = append(args, uuid)
 			argPos++
@@ -137,7 +139,8 @@ func buildLimitClause(filter api.SleepDiaryFilterDto) string {
 func insertSleepDiaryEntry(db *sql.DB, entry SleepDiaryEntry) (SleepDiaryEntry, error) {
 	query := `
 		INSERT INTO sleep_diary_entries (
-			account_uuid, 
+			account_uuid,
+			timezone, 
 			in_bed_at, 
 			tried_to_sleep_at, 
 			sleep_delay_in_min, 
@@ -152,14 +155,16 @@ func insertSleepDiaryEntry(db *sql.DB, entry SleepDiaryEntry) (SleepDiaryEntry, 
 			version
 		)
 		VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
 		)
 		RETURNING id
 	`
+
 	var id int64
 	err := db.QueryRow(
 		query,
 		entry.AccountUuid,
+		entry.Timezone,
 		entry.InBedAt,
 		entry.TriedToSleepAt,
 		entry.SleepDelayInMin,
@@ -193,24 +198,26 @@ func updateSleepDiaryEntry(db *sql.DB, entry SleepDiaryEntry) (SleepDiaryEntry, 
 	query := `
 		UPDATE sleep_diary_entries
 		SET 
-			in_bed_at = $1,
-			tried_to_sleep_at = $2,
-			sleep_delay_in_min = $3,
-			awakenings_count = $4,
-			awakenings_total_duration_in_min = $5,
-			final_wake_up_at = $6,
-			out_of_bed_at = $7,
-			sleep_quality = $8,
-			comments = $9,
-			updated_at = $10,
+			timezone = $1,
+			in_bed_at = $2,
+			tried_to_sleep_at = $3,
+			sleep_delay_in_min = $4,
+			awakenings_count = $5,
+			awakenings_total_duration_in_min = $6,
+			final_wake_up_at = $7,
+			out_of_bed_at = $8,
+			sleep_quality = $9,
+			comments = $10,
+			updated_at = $11,
 			version = version + 1
-		WHERE id = $11
+		WHERE id = $12
 		RETURNING version, account_uuid
 	`
 	var newVersion int64
 	var accountUuid string
 	err = tx.QueryRow(
 		query,
+		entry.Timezone,
 		entry.InBedAt,
 		entry.TriedToSleepAt,
 		entry.SleepDelayInMin,

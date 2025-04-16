@@ -1,6 +1,7 @@
 CREATE TABLE sleep_diary_entries (
     id BIGSERIAL PRIMARY KEY,
     account_uuid UUID NOT NULL,
+    timezone TEXT NOT NULL,
     in_bed_at TIMESTAMPTZ NULL,
     tried_to_sleep_at TIMESTAMPTZ NOT NULL,
     sleep_delay_in_min INTEGER NULL,

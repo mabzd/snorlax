@@ -24,7 +24,7 @@ tasks:
   run-deps:
     desc: "Run dependencies"
     cmds:
-      - docker-compose up db -d
+      - docker compose up db -d
 
   upgrade-db:
     desc: "Upgrade DB"

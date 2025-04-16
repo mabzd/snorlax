@@ -12,7 +12,6 @@ import (
 
 	"github.com/mabzd/snorlax/api"
 	"github.com/mabzd/snorlax/internal/service"
-	"github.com/mabzd/snorlax/internal/utils"
 )
 
 func getSleepDiaryEntry(service *service.SleepDiaryService) http.HandlerFunc {
@@ -64,11 +63,11 @@ func getSleepDiaryEntries(service *service.SleepDiaryService) http.HandlerFunc {
 		}
 
 		filter := api.SleepDiaryFilterDto{
-			AccountUuids: accountUuids,
-			FromDate:     fromDate,
-			ToDate:       toDate,
-			PageSize:     utils.WithDefault(pageSize, api.DEFAULT_PAGE_SIZE),
-			PageNumber:   utils.WithDefault(pageNumber, 1),
+			AccountUuid: accountUuids,
+			FromDate:    fromDate,
+			ToDate:      toDate,
+			PageSize:    withDefault(pageSize, api.DEFAULT_PAGE_SIZE),
+			PageNumber:  withDefault(pageNumber, 1),
 		}
 
 		entries, serviceErr := service.GetEntriesByFilter(filter)
@@ -190,4 +189,11 @@ func toHttpError(code api.ErrorCode) int {
 	default:
 		return http.StatusInternalServerError
 	}
+}
+
+func withDefault[T any](value *T, defaultValue T) T {
+	if value == nil {
+		return defaultValue
+	}
+	return *value
 }

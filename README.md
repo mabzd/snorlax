@@ -8,6 +8,7 @@ Datapoints captured are modeled after [Consensus Sleep Diary (CSD)](https://pmc.
 
 | Field | Type | Description |
 |-|-|-|
+| `timezone` | text **REQUIRED** | The timezone the persone slept in. |
 | `in_bed_at` | timestamp | The time the person got into bed (optional).|
 | `tried_to_sleep_at` | timestamp **REQUIRED** | The time the person attempted to fall asleep. |
 | `sleep_delay_in_min` | number | Number of minutes it took to fall asleep after trying (optional). |
@@ -22,7 +23,7 @@ Datapoints captured are modeled after [Consensus Sleep Diary (CSD)](https://pmc.
 
 In the project root directory run
 ```
-docker-compose up
+docker compose up
 ```
 This runs the `snorlax-api` image hosting the API service on port :8080 and it's dependency image `snorlax-db` hosting PostgreSQL database on port :5432.
 
@@ -72,7 +73,7 @@ Response
 
 Request
 ```
-curl localhost:8080/sleep_diary/entries/1
+curl http://localhost:8080/sleep_diary/entries/1
 ```
 
 Response
@@ -106,7 +107,7 @@ Allowed query parameters:
 
 Request
 ```
-curl localhost:8080/sleep_diary/entries?account_uuid=c7f23d8a-5a10-4a1a-9c55-2f8c5d872f09
+curl http://localhost:8080/sleep_diary/entries?account_uuid=c7f23d8a-5a10-4a1a-9c55-2f8c5d872f09
 ```
 
 Response

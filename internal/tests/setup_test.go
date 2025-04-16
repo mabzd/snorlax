@@ -78,31 +78,46 @@ func TestMain(m *testing.M) {
 }
 
 func newMinimalRandomEntryData() api.SleepDiaryEntryDataDto {
+	tz := newRandomTimezone()
 	sleepAt := time.Now().Add(time.Duration(-rand.Intn(24)) * time.Hour)
 	return api.SleepDiaryEntryDataDto{
-		TriedToSleepAt: sleepAt,
-		FinalWakeUpAt:  sleepAt.Add(time.Duration(rand.Intn(4)+6) * time.Hour),
+		Timezone:       tz.String(),
+		TriedToSleepAt: sleepAt.In(tz),
+		FinalWakeUpAt:  sleepAt.In(tz).Add(time.Duration(rand.Intn(4)+6) * time.Hour),
 		SleepQuality:   api.ExcellentSleepQuality,
 	}
 }
 
 func newRandomEntryData() api.SleepDiaryEntryDataDto {
-	return newRandomEntryDataForSleepAt(time.Now())
+	sleepAt := time.Now().Add(time.Duration(-rand.Intn(24)) * time.Hour)
+	return newRandomEntryDataForSleepAt(sleepAt)
 }
 
 func newRandomEntryDataForSleepAt(sleepAt time.Time) api.SleepDiaryEntryDataDto {
+	tz := newRandomTimezone()
 	wakeUpAt := sleepAt.Add(time.Duration(8+rand.Intn(4)) * time.Hour)
 	return api.SleepDiaryEntryDataDto{
-		InBedAt:                      toPtr(sleepAt.Add(time.Duration(-rand.Intn(60)) * time.Minute)),
-		TriedToSleepAt:               sleepAt,
+		Timezone:                     tz.String(),
+		InBedAt:                      toPtr(sleepAt.In(tz).Add(time.Duration(-rand.Intn(60)) * time.Minute)),
+		TriedToSleepAt:               sleepAt.In(tz),
 		SleepDelayInMin:              toPtr(rand.Intn(60)),
 		AwakeningsCount:              toPtr(rand.Intn(5)),
 		AwakeningsTotalDurationInMin: toPtr(rand.Intn(60)),
-		FinalWakeUpAt:                wakeUpAt,
-		OutOfBedAt:                   toPtr(wakeUpAt.Add(time.Duration(60) * time.Minute)),
+		FinalWakeUpAt:                wakeUpAt.In(tz),
+		OutOfBedAt:                   toPtr(wakeUpAt.In(tz).Add(time.Duration(60) * time.Minute)),
 		SleepQuality:                 api.SleepQuality(rand.Intn(5) + 1),
 		Comments:                     toPtr("Good sleep"),
 	}
+}
+
+func newRandomTimezone() *time.Location {
+	timezones := []string{"America/New_York", "Europe/London", "Asia/Tokyo", "Australia/Sydney", "America/Los_Angeles"}
+	randomTimezone := timezones[rand.Intn(len(timezones))]
+	location, err := time.LoadLocation(randomTimezone)
+	if err != nil {
+		log.Fatalf("Failed to load location: %v", err)
+	}
+	return location
 }
 
 func assertEqualEntryDto(t *testing.T, expected api.SleepDiaryEntryDto, actual api.SleepDiaryEntryDto, compareVersion bool) {
@@ -140,9 +155,11 @@ func assertValuesEqualTimeMsPrec(t *testing.T, expected *time.Time, actual *time
 	if expected == nil || actual == nil {
 		t.Fatalf("Expected and actual times do not match (%s): expected=%v, actual=%v", msg, expected, actual)
 	}
-	if expected.UnixMilli() != actual.UnixMilli() {
-		t.Fatalf("Expected and actual times do not match with millisecond precision (%s): expected=%v, actual=%v", msg, expected, actual)
-	}
+	assert.Equal(
+		t,
+		expected.Truncate(time.Millisecond).Format(time.RFC3339),
+		actual.Truncate(time.Millisecond).Format(time.RFC3339),
+		msg)
 }
 
 func mustCreateRandomEntry(t *testing.T) api.SleepDiaryEntryDto {

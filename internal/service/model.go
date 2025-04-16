@@ -5,12 +5,12 @@ import (
 	"time"
 
 	"github.com/mabzd/snorlax/api"
-	"github.com/mabzd/snorlax/internal/utils"
 )
 
 type SleepDiaryEntry struct {
 	Id                           int64
 	AccountUuid                  string
+	Timezone                     string
 	InBedAt                      sql.NullTime
 	TriedToSleepAt               time.Time
 	SleepDelayInMin              sql.NullInt32
@@ -39,42 +39,101 @@ func fromCreateSleepDiaryEntryDto(dto api.CreateSleepDiaryEntryDto) SleepDiaryEn
 func fromUpdateSleepDiaryEntryDto(dto api.UpdateSleepDiaryEntryDto) SleepDiaryEntry {
 	entry := SleepDiaryEntry{
 		UpdatedAt: time.Now().UTC(),
-		Version:   utils.ToNullInt64(dto.Version),
+		Version:   toNullInt64(dto.Version),
 	}
 	assignDtoToEntry(dto.SleepDiaryEntryDataDto, &entry)
 	return entry
 }
 
-func toSleepDiaryEntryDto(entry SleepDiaryEntry) api.SleepDiaryEntryDto {
+func toSleepDiaryEntryDto(entry SleepDiaryEntry) (api.SleepDiaryEntryDto, error) {
 	dto := api.SleepDiaryEntryDto{
 		Id:          entry.Id,
 		AccountUuid: entry.AccountUuid,
 		Version:     entry.Version.Int64,
 	}
-	assignEntryToDto(entry, &dto.SleepDiaryEntryDataDto)
-	return dto
+	err := assignEntryToDto(entry, &dto.SleepDiaryEntryDataDto)
+	return dto, err
 }
 
-func assignEntryToDto(src SleepDiaryEntry, dst *api.SleepDiaryEntryDataDto) {
-	dst.InBedAt = utils.FromNullTime(src.InBedAt)
-	dst.TriedToSleepAt = src.TriedToSleepAt
-	dst.SleepDelayInMin = utils.FromNullInt32(src.SleepDelayInMin)
-	dst.AwakeningsCount = utils.FromNullInt32(src.AwakeningsCount)
-	dst.AwakeningsTotalDurationInMin = utils.FromNullInt32(src.AwakeningsTotalDurationInMin)
-	dst.FinalWakeUpAt = src.FinalWakeUpAt
-	dst.OutOfBedAt = utils.FromNullTime(src.OutOfBedAt)
+func assignEntryToDto(src SleepDiaryEntry, dst *api.SleepDiaryEntryDataDto) error {
+	tz, err := time.LoadLocation(src.Timezone)
+	if err != nil {
+		return err
+	}
+
+	dst.Timezone = src.Timezone
+	dst.InBedAt = fromNullTime(src.InBedAt, tz)
+	dst.TriedToSleepAt = src.TriedToSleepAt.In(tz)
+	dst.SleepDelayInMin = fromNullInt32(src.SleepDelayInMin)
+	dst.AwakeningsCount = fromNullInt32(src.AwakeningsCount)
+	dst.AwakeningsTotalDurationInMin = fromNullInt32(src.AwakeningsTotalDurationInMin)
+	dst.FinalWakeUpAt = src.FinalWakeUpAt.In(tz)
+	dst.OutOfBedAt = fromNullTime(src.OutOfBedAt, tz)
 	dst.SleepQuality = src.SleepQuality
-	dst.Comments = utils.FromNullString(src.Comments)
+	dst.Comments = fromNullString(src.Comments)
+	return nil
 }
 
 func assignDtoToEntry(src api.SleepDiaryEntryDataDto, dst *SleepDiaryEntry) {
-	dst.InBedAt = utils.ToNullTime(src.InBedAt)
+	dst.Timezone = src.Timezone
+	dst.InBedAt = toNullTime(src.InBedAt)
 	dst.TriedToSleepAt = src.TriedToSleepAt
-	dst.SleepDelayInMin = utils.ToNullInt32(src.SleepDelayInMin)
-	dst.AwakeningsCount = utils.ToNullInt32(src.AwakeningsCount)
-	dst.AwakeningsTotalDurationInMin = utils.ToNullInt32(src.AwakeningsTotalDurationInMin)
+	dst.SleepDelayInMin = toNullInt32(src.SleepDelayInMin)
+	dst.AwakeningsCount = toNullInt32(src.AwakeningsCount)
+	dst.AwakeningsTotalDurationInMin = toNullInt32(src.AwakeningsTotalDurationInMin)
 	dst.FinalWakeUpAt = src.FinalWakeUpAt
-	dst.OutOfBedAt = utils.ToNullTime(src.OutOfBedAt)
+	dst.OutOfBedAt = toNullTime(src.OutOfBedAt)
 	dst.SleepQuality = src.SleepQuality
-	dst.Comments = utils.ToNullString(src.Comments)
+	dst.Comments = toNullString(src.Comments)
+}
+
+func toNullTime(t *time.Time) sql.NullTime {
+	if t != nil {
+		return sql.NullTime{Time: *t, Valid: true}
+	}
+	return sql.NullTime{}
+}
+
+func fromNullTime(nt sql.NullTime, tz *time.Location) *time.Time {
+	if nt.Valid {
+		t := nt.Time.In(tz)
+		return &t
+	}
+	return nil
+}
+
+func toNullInt32(i *int) sql.NullInt32 {
+	if i != nil {
+		return sql.NullInt32{Int32: int32(*i), Valid: true}
+	}
+	return sql.NullInt32{}
+}
+
+func fromNullInt32(i sql.NullInt32) *int {
+	if i.Valid {
+		val := int(i.Int32)
+		return &val
+	}
+	return nil
+}
+
+func toNullInt64(i *int64) sql.NullInt64 {
+	if i != nil {
+		return sql.NullInt64{Int64: int64(*i), Valid: true}
+	}
+	return sql.NullInt64{}
+}
+
+func toNullString(s *string) sql.NullString {
+	if s != nil {
+		return sql.NullString{String: *s, Valid: true}
+	}
+	return sql.NullString{}
+}
+
+func fromNullString(s sql.NullString) *string {
+	if s.Valid {
+		return &s.String
+	}
+	return nil
 }

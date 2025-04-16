@@ -33,7 +33,13 @@ func (s *SleepDiaryService) GetEntryById(id int64) (api.SleepDiaryEntryDto, api.
 		return api.SleepDiaryEntryDto{}, api.NewError("read failed", api.ERR_UNKNOWN)
 	}
 
-	return toSleepDiaryEntryDto(entry), nil
+	dto, err := toSleepDiaryEntryDto(entry)
+	if err != nil {
+		log.Printf("Converting entry %d to DTO failed: %v\n", id, err)
+		return api.SleepDiaryEntryDto{}, api.NewError("conversion failed", api.ERR_UNKNOWN)
+	}
+
+	return dto, nil
 }
 
 func (s *SleepDiaryService) GetEntriesByFilter(filter api.SleepDiaryFilterDto) (api.PageDto[api.SleepDiaryEntryDto], api.Error) {
@@ -56,7 +62,12 @@ func (s *SleepDiaryService) GetEntriesByFilter(filter api.SleepDiaryFilterDto) (
 
 	items := make([]api.SleepDiaryEntryDto, len(entries))
 	for i, entry := range entries {
-		items[i] = toSleepDiaryEntryDto(entry)
+		dto, err := toSleepDiaryEntryDto(entry)
+		if err != nil {
+			log.Printf("Converting entry %d to DTO failed: %v\n", entry.Id, err)
+			return api.PageDto[api.SleepDiaryEntryDto]{}, api.NewError("conversion failed", api.ERR_UNKNOWN)
+		}
+		items[i] = dto
 	}
 
 	return api.PageDto[api.SleepDiaryEntryDto]{
@@ -80,7 +91,13 @@ func (s *SleepDiaryService) CreateEntry(dto api.CreateSleepDiaryEntryDto) (api.S
 		return api.SleepDiaryEntryDto{}, api.NewError("insert failed", api.ERR_UNKNOWN)
 	}
 
-	return toSleepDiaryEntryDto(createdEntry), nil
+	createdDto, err := toSleepDiaryEntryDto(createdEntry)
+	if err != nil {
+		log.Printf("Converting entry %d to DTO failed: %v\n", createdEntry.Id, err)
+		return api.SleepDiaryEntryDto{}, api.NewError("conversion failed", api.ERR_UNKNOWN)
+	}
+
+	return createdDto, nil
 }
 
 func (s *SleepDiaryService) UpdateEntry(id int64, dto api.UpdateSleepDiaryEntryDto) (api.SleepDiaryEntryDto, api.Error) {
@@ -103,5 +120,11 @@ func (s *SleepDiaryService) UpdateEntry(id int64, dto api.UpdateSleepDiaryEntryD
 		return api.SleepDiaryEntryDto{}, api.NewError("update failed", api.ERR_UNKNOWN)
 	}
 
-	return toSleepDiaryEntryDto(updatedEntry), nil
+	updatedDto, err := toSleepDiaryEntryDto(updatedEntry)
+	if err != nil {
+		log.Printf("Converting entry %d to DTO failed: %v\n", updatedDto.Id, err)
+		return api.SleepDiaryEntryDto{}, api.NewError("conversion failed", api.ERR_UNKNOWN)
+	}
+
+	return updatedDto, nil
 }

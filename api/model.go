@@ -39,6 +39,7 @@ func (sq SleepQuality) String() string {
 }
 
 type SleepDiaryEntryDataDto struct {
+	Timezone                     string       `json:"timezone"`
 	InBedAt                      *time.Time   `json:"get_in_bed_at,omitempty"`
 	TriedToSleepAt               time.Time    `json:"tried_to_sleep_at"`
 	SleepDelayInMin              *int         `json:"sleep_delay_in_min,omitempty"`
@@ -57,6 +58,13 @@ func (dto *SleepDiaryEntryDataDto) Validate() []error {
 		labeledTime{&dto.FinalWakeUpAt, "final_wake_up_at"},
 		labeledTime{dto.OutOfBedAt, "out_of_bed_at"},
 	)
+	if dto.Timezone == "" {
+		errors = append(errors, fmt.Errorf("timezone is required"))
+	}
+	_, err := time.LoadLocation(dto.Timezone)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("timezone is not recognized"))
+	}
 	if dto.TriedToSleepAt.IsZero() {
 		errors = append(errors, fmt.Errorf("tried_to_sleep_at is required"))
 	}
@@ -78,15 +86,16 @@ func (dto *SleepDiaryEntryDataDto) Validate() []error {
 	if dto.Comments != nil && len(*dto.Comments) > MAX_COMMENT_LENGTH {
 		errors = append(errors, fmt.Errorf("comments should not exceed %d characters", MAX_COMMENT_LENGTH))
 	}
+
 	return errors
 }
 
 type SleepDiaryFilterDto struct {
-	AccountUuids []string   `json:"account_uuids"`
-	FromDate     *time.Time `json:"from_date,omitempty"`
-	ToDate       *time.Time `json:"to_date,omitempty"`
-	PageSize     int64      `json:"page_size"`
-	PageNumber   int64      `json:"page_number"`
+	AccountUuid []string   `json:"account_uuid"`
+	FromDate    *time.Time `json:"from_date,omitempty"`
+	ToDate      *time.Time `json:"to_date,omitempty"`
+	PageSize    int64      `json:"page_size"`
+	PageNumber  int64      `json:"page_number"`
 }
 
 func (dto *SleepDiaryFilterDto) Validate() []error {
@@ -94,10 +103,10 @@ func (dto *SleepDiaryFilterDto) Validate() []error {
 		labeledTime{dto.FromDate, "from_date"},
 		labeledTime{dto.ToDate, "to_date"},
 	)
-	if len(dto.AccountUuids) == 0 {
-		errors = append(errors, fmt.Errorf("account_uuids is required"))
+	if len(dto.AccountUuid) == 0 {
+		errors = append(errors, fmt.Errorf("account_uuid is required"))
 	}
-	for _, id := range dto.AccountUuids {
+	for _, id := range dto.AccountUuid {
 		if _, err := uuid.Parse(id); err != nil {
 			errors = append(errors, fmt.Errorf("invalid UUID '%s'", id))
 		}
@@ -134,6 +143,9 @@ func (dto *CreateSleepDiaryEntryDto) Validate() []error {
 	if dto.AccountUuid == "" {
 		errors = append(errors, fmt.Errorf("account_uuid is required"))
 	}
+	if _, err := uuid.Parse(dto.AccountUuid); err != nil {
+		errors = append(errors, fmt.Errorf("invalid UUID '%s'", dto.AccountUuid))
+	}
 	return errors
 }
 
@@ -142,11 +154,6 @@ type SleepDiaryEntryDto struct {
 	AccountUuid string `json:"account_uuid"`
 	Version     int64  `json:"version"`
 	SleepDiaryEntryDataDto
-}
-
-func (dto *SleepDiaryEntryDto) Validate() []error {
-	errors := dto.SleepDiaryEntryDataDto.Validate()
-	return errors
 }
 
 type PageDto[T any] struct {
