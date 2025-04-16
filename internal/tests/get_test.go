@@ -179,12 +179,12 @@ func mustCreateTestData(t *testing.T) testData {
 	a := uuid.NewString()
 	b := uuid.NewString()
 	c := uuid.NewString()
-	a1 := mustCreateEntry(t, api.AddSleepDiaryEntryDto{AccountUuid: a, SleepDiaryEntryDataDto: prepateSleepDiaryDataForSleepAt(now)})
-	a2 := mustCreateEntry(t, api.AddSleepDiaryEntryDto{AccountUuid: a, SleepDiaryEntryDataDto: prepateSleepDiaryDataForSleepAt(now.Add(24 * time.Hour))})
-	a3 := mustCreateEntry(t, api.AddSleepDiaryEntryDto{AccountUuid: a, SleepDiaryEntryDataDto: prepateSleepDiaryDataForSleepAt(now.Add(48 * time.Hour))})
-	a4 := mustCreateEntry(t, api.AddSleepDiaryEntryDto{AccountUuid: a, SleepDiaryEntryDataDto: prepateSleepDiaryDataForSleepAt(now.Add(72 * time.Hour))})
-	b1 := mustCreateEntry(t, api.AddSleepDiaryEntryDto{AccountUuid: b, SleepDiaryEntryDataDto: prepateSleepDiaryDataForSleepAt(now.Add(1 * time.Second))})
-	c1 := mustCreateEntry(t, api.AddSleepDiaryEntryDto{AccountUuid: c, SleepDiaryEntryDataDto: prepateSleepDiaryDataForSleepAt(now.Add(2 * time.Second))})
+	a1 := mustCreateEntry(t, api.CreateSleepDiaryEntryDto{AccountUuid: a, SleepDiaryEntryDataDto: newRandomEntryDataForSleepAt(now)})
+	a2 := mustCreateEntry(t, api.CreateSleepDiaryEntryDto{AccountUuid: a, SleepDiaryEntryDataDto: newRandomEntryDataForSleepAt(now.Add(24 * time.Hour))})
+	a3 := mustCreateEntry(t, api.CreateSleepDiaryEntryDto{AccountUuid: a, SleepDiaryEntryDataDto: newRandomEntryDataForSleepAt(now.Add(48 * time.Hour))})
+	a4 := mustCreateEntry(t, api.CreateSleepDiaryEntryDto{AccountUuid: a, SleepDiaryEntryDataDto: newRandomEntryDataForSleepAt(now.Add(72 * time.Hour))})
+	b1 := mustCreateEntry(t, api.CreateSleepDiaryEntryDto{AccountUuid: b, SleepDiaryEntryDataDto: newRandomEntryDataForSleepAt(now.Add(1 * time.Second))})
+	c1 := mustCreateEntry(t, api.CreateSleepDiaryEntryDto{AccountUuid: c, SleepDiaryEntryDataDto: newRandomEntryDataForSleepAt(now.Add(2 * time.Second))})
 
 	return testData{
 		UuidA: a,
@@ -210,7 +210,7 @@ func runGetEntriesByQueryAndAssertBadRequest(t *testing.T, query string) {
 }
 
 func assertDefaultPageEqual(t *testing.T, total int64, items []api.SleepDiaryEntryDto, actual api.PageDto[api.SleepDiaryEntryDto]) {
-	assertPageEqual(t, total, api.DEFAULT_PAGE_SIZE, api.DEFAULT_PAGE_NUMBER, items, actual)
+	assertPageEqual(t, total, api.DEFAULT_PAGE_SIZE, 1, items, actual)
 }
 
 func assertPageEqual(t *testing.T, total, pageSize, pageNumber int64, items []api.SleepDiaryEntryDto, actual api.PageDto[api.SleepDiaryEntryDto]) {
@@ -219,7 +219,7 @@ func assertPageEqual(t *testing.T, total, pageSize, pageNumber int64, items []ap
 	assert.Equal(t, pageNumber, actual.PageNumber)
 	assert.Equal(t, len(items), len(actual.Items))
 	for i := 0; i < len(items); i++ {
-		assertEqualSleepDiaryEntryDto(t, items[i], actual.Items[i], true)
+		assertEqualEntryDto(t, items[i], actual.Items[i], true)
 	}
 }
 

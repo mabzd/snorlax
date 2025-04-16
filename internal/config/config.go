@@ -5,7 +5,6 @@ import (
 )
 
 type Config struct {
-	Env                string
 	ApiPort            string
 	DbHost             string
 	DbPort             string
@@ -17,13 +16,12 @@ type Config struct {
 
 func LoadConfig() Config {
 	return Config{
-		Env:                getenv("GO_ENV", "local"),
 		ApiPort:            getenv("API_PORT", "8080"),
 		DbHost:             getenv("DB_HOST", "localhost"),
 		DbPort:             getenv("DB_PORT", "5432"),
 		DbUser:             getenv("DB_USER", "postgres"),
 		DbPass:             getenv("DB_PASS", "postgres"),
-		DbName:             getenv("DB_NAME", "stringdb"),
+		DbName:             getenv("DB_NAME", "snorlax_db"),
 		ServerTimeoutInSec: 30,
 	}
 }

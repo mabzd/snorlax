@@ -9,29 +9,29 @@ import (
 	"github.com/mabzd/snorlax/api"
 )
 
-func TestAddAndGetMinimalSleepDiary(t *testing.T) {
-	runAddAndGetSleepDiary(
+func TestCreateAndGetMinimalSleepDiary(t *testing.T) {
+	runCreateAndGetSleepDiary(
 		t,
-		api.AddSleepDiaryEntryDto{
+		api.CreateSleepDiaryEntryDto{
 			AccountUuid:            uuid.NewString(),
-			SleepDiaryEntryDataDto: prepareMinimalSleepDiaryData(),
+			SleepDiaryEntryDataDto: newMinimalRandomEntryData(),
 		})
 }
 
-func TestAddAndGetFullSleepDiary(t *testing.T) {
-	runAddAndGetSleepDiary(
+func TestCreateAndGetFullSleepDiary(t *testing.T) {
+	runCreateAndGetSleepDiary(
 		t,
-		api.AddSleepDiaryEntryDto{
+		api.CreateSleepDiaryEntryDto{
 			AccountUuid:            uuid.NewString(),
-			SleepDiaryEntryDataDto: prepareSleepDiaryData(),
+			SleepDiaryEntryDataDto: newRandomEntryData(),
 		})
 }
 
-func runAddAndGetSleepDiary(t *testing.T, addDto api.AddSleepDiaryEntryDto) {
-	addResp := mustPost(t, "/sleep_diary/entries", addDto)
-	defer addResp.Body.Close()
-	assertHttpStatusCode(t, http.StatusCreated, addResp)
-	createdEntry := mustDecode[api.SleepDiaryEntryDto](addResp.Body)
+func runCreateAndGetSleepDiary(t *testing.T, dto api.CreateSleepDiaryEntryDto) {
+	createResp := mustPost(t, "/sleep_diary/entries", dto)
+	defer createResp.Body.Close()
+	assertHttpStatusCode(t, http.StatusCreated, createResp)
+	createdEntry := mustDecode[api.SleepDiaryEntryDto](createResp.Body)
 	retrievedEntry := mustGetEntryById(t, createdEntry.Id)
-	assertEqualSleepDiaryEntryDto(t, createdEntry, retrievedEntry, true)
+	assertEqualEntryDto(t, createdEntry, retrievedEntry, true)
 }

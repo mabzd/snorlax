@@ -12,28 +12,27 @@ import (
 	"github.com/mabzd/snorlax/internal/service"
 )
 
-func NewServerHandler() http.Handler {
-	svc := service.NewSleepDiaryService()
+func NewServerHandler(cfg config.Config) http.Handler {
+	svc := service.NewSleepDiaryService(cfg)
 	mux := http.NewServeMux()
 	add(mux, "GET /sleep_diary/entries/{id}", getSleepDiaryEntry(svc))
 	add(mux, "GET /sleep_diary/entries", getSleepDiaryEntries(svc))
-	add(mux, "POST /sleep_diary/entries", addSleepDiaryEntry(svc))
+	add(mux, "POST /sleep_diary/entries", createSleepDiaryEntry(svc))
 	add(mux, "PUT /sleep_diary/entries/{id}", updateSleepDiaryEntry(svc))
-	add(mux, "/", returnNotFound())
+	add(mux, "/", notFound())
 	return mux
 }
 
-func NewServer() *http.Server {
-	cfg := config.LoadConfig()
+func NewServer(cfg config.Config) *http.Server {
 	return &http.Server{
-		Handler:      NewServerHandler(),
+		Handler:      NewServerHandler(cfg),
 		Addr:         fmt.Sprintf(":%s", cfg.ApiPort),
 		WriteTimeout: time.Duration(cfg.ServerTimeoutInSec) * time.Second,
 		ReadTimeout:  time.Duration(cfg.ServerTimeoutInSec) * time.Second,
 	}
 }
 
-func returnNotFound() http.HandlerFunc {
+func notFound() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, api.ERR_NOT_FOUND, "path not found", nil)
 	}

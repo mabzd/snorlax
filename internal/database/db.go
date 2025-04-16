@@ -10,9 +10,7 @@ import (
 	"github.com/mabzd/snorlax/internal/config"
 )
 
-func InitDB() (*sql.DB, error) {
-	cfg := config.LoadConfig()
-
+func InitDB(cfg config.Config) (*sql.DB, error) {
 	connStr := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		cfg.DbHost, cfg.DbPort, cfg.DbUser, cfg.DbPass, cfg.DbName)
@@ -51,19 +49,6 @@ func InitDB() (*sql.DB, error) {
 	return db, nil
 }
 
-func createMigrationsTable(db *sql.DB) error {
-	query := `
-		CREATE TABLE IF NOT EXISTS migrations (
-			id SERIAL PRIMARY KEY,
-			file_name VARCHAR(255) NOT NULL,
-			elapsed_ms BIGSERIAL NOT NULL,
-			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-		);
-	`
-	_, err := db.Exec(query)
-	return err
-}
-
 func GetAppliedMigrationFileNamesSet(db *sql.DB) (map[string]struct{}, error) {
 	query := "SELECT file_name FROM migrations"
 	rows, err := db.Query(query)
@@ -90,15 +75,29 @@ func GetAppliedMigrationFileNamesSet(db *sql.DB) (map[string]struct{}, error) {
 
 func MustApplyMigration(db *sql.DB, sql string, fileName string) {
 	start := time.Now()
-	query := `
-		INSERT INTO migrations (file_name, elapsed_ms)
-		VALUES ($1, $2)
-	`
 	if _, err := db.Exec(sql); err != nil {
 		log.Fatalf("Failed to apply migration '%s': %v", fileName, err)
 	}
+
+	insertSql := `
+		INSERT INTO migrations (file_name, elapsed_ms)
+		VALUES ($1, $2)
+	`
 	elapsedMs := time.Since(start).Milliseconds()
-	if _, err := db.Exec(query, fileName, elapsedMs); err != nil {
+	if _, err := db.Exec(insertSql, fileName, elapsedMs); err != nil {
 		log.Fatalf("Failed to insert migration record for '%s': %v", fileName, err)
 	}
+}
+
+func createMigrationsTable(db *sql.DB) error {
+	query := `
+		CREATE TABLE IF NOT EXISTS migrations (
+			id SERIAL PRIMARY KEY,
+			file_name VARCHAR(255) NOT NULL,
+			elapsed_ms BIGSERIAL NOT NULL,
+			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);
+	`
+	_, err := db.Exec(query)
+	return err
 }

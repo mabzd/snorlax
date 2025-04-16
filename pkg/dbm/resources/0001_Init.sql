@@ -14,3 +14,9 @@ CREATE TABLE sleep_diary_entries (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     version INTEGER NOT NULL DEFAULT 1
 );
+
+CREATE INDEX idx_sleep_diary_entries_account_uuid 
+ON sleep_diary_entries (account_uuid);
+
+CREATE INDEX idx_sleep_diary_entries_tried_to_sleep_at
+ON sleep_diary_entries (tried_to_sleep_at);

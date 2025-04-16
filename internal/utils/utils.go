@@ -1,5 +1,8 @@
 package utils
 
-func ToPtr[T any](value T) *T {
-	return &value
+func WithDefault[T any](value *T, defaultValue T) T {
+	if value == nil {
+		return defaultValue
+	}
+	return *value
 }

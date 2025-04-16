@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/mabzd/snorlax/api"
+	"github.com/mabzd/snorlax/internal/config"
 	"github.com/mabzd/snorlax/internal/database"
 )
 
@@ -12,8 +13,8 @@ type SleepDiaryService struct {
 	db *sql.DB
 }
 
-func NewSleepDiaryService() *SleepDiaryService {
-	db, err := database.InitDB()
+func NewSleepDiaryService(cfg config.Config) *SleepDiaryService {
+	db, err := database.InitDB(cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
@@ -66,13 +67,13 @@ func (s *SleepDiaryService) GetEntriesByFilter(filter api.SleepDiaryFilterDto) (
 	}, nil
 }
 
-func (s *SleepDiaryService) CreateEntry(dto api.AddSleepDiaryEntryDto) (api.SleepDiaryEntryDto, api.Error) {
+func (s *SleepDiaryService) CreateEntry(dto api.CreateSleepDiaryEntryDto) (api.SleepDiaryEntryDto, api.Error) {
 	errs := dto.Validate()
 	if len(errs) > 0 {
 		return api.SleepDiaryEntryDto{}, api.NewValidationError("invalid create data", errs)
 	}
 
-	entry := fromAddSleepDiaryEntryDto(dto)
+	entry := fromCreateSleepDiaryEntryDto(dto)
 	createdEntry, err := insertSleepDiaryEntry(s.db, entry)
 	if err != nil {
 		log.Printf("Inserting entry %v failed: %v\n", dto, err)

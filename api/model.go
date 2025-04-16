@@ -7,8 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const DEFAULT_PAGE_NUMBER = int64(1)
-const DEFAULT_PAGE_SIZE = int64(20)
+const DEFAULT_PAGE_SIZE = int64(100)
 const MAX_PAGE_SIZE = int64(1000)
 const MAX_COMMENT_LENGTH = 2048
 
@@ -125,12 +124,12 @@ func (dto *UpdateSleepDiaryEntryDto) Validate() []error {
 	return errors
 }
 
-type AddSleepDiaryEntryDto struct {
+type CreateSleepDiaryEntryDto struct {
 	AccountUuid string `json:"account_uuid"`
 	SleepDiaryEntryDataDto
 }
 
-func (dto *AddSleepDiaryEntryDto) Validate() []error {
+func (dto *CreateSleepDiaryEntryDto) Validate() []error {
 	errors := dto.SleepDiaryEntryDataDto.Validate()
 	if dto.AccountUuid == "" {
 		errors = append(errors, fmt.Errorf("account_uuid is required"))

@@ -14,7 +14,7 @@ func TestUpdateEntry(t *testing.T) {
 
 	updateDto := api.UpdateSleepDiaryEntryDto{
 		Version:                &createdEntry.Version,
-		SleepDiaryEntryDataDto: prepareSleepDiaryData(),
+		SleepDiaryEntryDataDto: newRandomEntryData(),
 	}
 
 	updateResp := mustPut(t, fmt.Sprintf("/sleep_diary/entries/%v", createdEntry.Id), updateDto)
@@ -24,7 +24,7 @@ func TestUpdateEntry(t *testing.T) {
 
 	assert.Equal(t, createdEntry.Version+1, updatedEntry.Version)
 	retrievedEntry := mustGetEntryById(t, createdEntry.Id)
-	assertEqualSleepDiaryEntryDto(t, retrievedEntry, updatedEntry, false)
+	assertEqualEntryDto(t, retrievedEntry, updatedEntry, false)
 }
 
 func TestUpdateMinimalEntry(t *testing.T) {
@@ -32,7 +32,7 @@ func TestUpdateMinimalEntry(t *testing.T) {
 
 	updateDto := api.UpdateSleepDiaryEntryDto{
 		Version:                &createdEntry.Version,
-		SleepDiaryEntryDataDto: prepareMinimalSleepDiaryData(),
+		SleepDiaryEntryDataDto: newMinimalRandomEntryData(),
 	}
 
 	updateResp := mustPut(t, fmt.Sprintf("/sleep_diary/entries/%v", createdEntry.Id), updateDto)
@@ -42,12 +42,12 @@ func TestUpdateMinimalEntry(t *testing.T) {
 
 	assert.Equal(t, createdEntry.Version+1, updatedEntry.Version)
 	retrievedEntry := mustGetEntryById(t, createdEntry.Id)
-	assertEqualSleepDiaryEntryDto(t, retrievedEntry, updatedEntry, false)
+	assertEqualEntryDto(t, retrievedEntry, updatedEntry, false)
 }
 
 func TestUpdateNonExistingEntry(t *testing.T) {
 	updateDto := api.UpdateSleepDiaryEntryDto{
-		SleepDiaryEntryDataDto: prepareSleepDiaryData(),
+		SleepDiaryEntryDataDto: newRandomEntryData(),
 	}
 
 	updateResp := mustPut(t, fmt.Sprintf("/sleep_diary/entries/%v", 99999999999999999), updateDto)
@@ -60,7 +60,7 @@ func TestUpdateWithWrongVersion(t *testing.T) {
 
 	updateDto := api.UpdateSleepDiaryEntryDto{
 		Version:                toPtr(createdEntry.Version + 1),
-		SleepDiaryEntryDataDto: prepareSleepDiaryData(),
+		SleepDiaryEntryDataDto: newRandomEntryData(),
 	}
 
 	updateResp := mustPut(t, fmt.Sprintf("/sleep_diary/entries/%v", createdEntry.Id), updateDto)
@@ -72,7 +72,7 @@ func TestUpdateWithoutVersion(t *testing.T) {
 	createdEntry := mustCreateRandomEntry(t)
 
 	updateDto := api.UpdateSleepDiaryEntryDto{
-		SleepDiaryEntryDataDto: prepareSleepDiaryData(),
+		SleepDiaryEntryDataDto: newRandomEntryData(),
 	}
 
 	updateResp := mustPut(t, fmt.Sprintf("/sleep_diary/entries/%v", createdEntry.Id), updateDto)
@@ -82,5 +82,5 @@ func TestUpdateWithoutVersion(t *testing.T) {
 
 	assert.Equal(t, createdEntry.Version+1, updatedEntry.Version)
 	retrievedEntry := mustGetEntryById(t, createdEntry.Id)
-	assertEqualSleepDiaryEntryDto(t, retrievedEntry, updatedEntry, false)
+	assertEqualEntryDto(t, retrievedEntry, updatedEntry, false)
 }

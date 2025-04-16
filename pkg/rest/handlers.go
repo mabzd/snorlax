@@ -12,6 +12,7 @@ import (
 
 	"github.com/mabzd/snorlax/api"
 	"github.com/mabzd/snorlax/internal/service"
+	"github.com/mabzd/snorlax/internal/utils"
 )
 
 func getSleepDiaryEntry(service *service.SleepDiaryService) http.HandlerFunc {
@@ -66,8 +67,8 @@ func getSleepDiaryEntries(service *service.SleepDiaryService) http.HandlerFunc {
 			AccountUuids: accountUuids,
 			FromDate:     fromDate,
 			ToDate:       toDate,
-			PageSize:     withDefault(pageSize, api.DEFAULT_PAGE_SIZE),
-			PageNumber:   withDefault(pageNumber, 1),
+			PageSize:     utils.WithDefault(pageSize, api.DEFAULT_PAGE_SIZE),
+			PageNumber:   utils.WithDefault(pageNumber, 1),
 		}
 
 		entries, serviceErr := service.GetEntriesByFilter(filter)
@@ -80,7 +81,7 @@ func getSleepDiaryEntries(service *service.SleepDiaryService) http.HandlerFunc {
 	}
 }
 
-func addSleepDiaryEntry(service *service.SleepDiaryService) http.HandlerFunc {
+func createSleepDiaryEntry(service *service.SleepDiaryService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -89,7 +90,7 @@ func addSleepDiaryEntry(service *service.SleepDiaryService) http.HandlerFunc {
 		}
 		defer r.Body.Close()
 
-		var dto api.AddSleepDiaryEntryDto
+		var dto api.CreateSleepDiaryEntryDto
 		if err := json.Unmarshal(body, &dto); err != nil {
 			respondWithError(w, api.ERR_INVALID, "invalid JSON format", err)
 			return
@@ -154,7 +155,7 @@ func parseInt64QueryParam(param string) (*int64, error) {
 }
 
 func respondWithApiError(w http.ResponseWriter, err api.Error) {
-	dto := err.ToDto()
+	dto := err.ToErrorDto()
 
 	detailsMessage := ""
 	if len(dto.Details) > 0 {
@@ -189,11 +190,4 @@ func toHttpError(code api.ErrorCode) int {
 	default:
 		return http.StatusInternalServerError
 	}
-}
-
-func withDefault[T any](value *T, defaultValue T) T {
-	if value == nil {
-		return defaultValue
-	}
-	return *value
 }

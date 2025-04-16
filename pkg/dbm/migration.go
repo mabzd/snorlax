@@ -6,6 +6,7 @@ import (
 	"log"
 	"sort"
 
+	"github.com/mabzd/snorlax/internal/config"
 	"github.com/mabzd/snorlax/internal/database"
 )
 
@@ -17,12 +18,11 @@ type migration struct {
 	Sql      string
 }
 
-func UpgradeDatabase() {
-	db, err := database.InitDB()
+func UpgradeDatabaseIfNeeded(cfg config.Config) {
+	db, err := database.InitDB(cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
-
 	defer db.Close()
 
 	appliedFileNameSet, err := database.GetAppliedMigrationFileNamesSet(db)
@@ -61,7 +61,6 @@ func readMigrations() []migration {
 		})
 
 	var migrations []migration
-
 	for _, entry := range entries {
 		data, err := embeddedResources.ReadFile("resources/" + entry.Name())
 		if err != nil {

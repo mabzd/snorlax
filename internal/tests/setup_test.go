@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/mabzd/snorlax/api"
+	"github.com/mabzd/snorlax/internal/config"
 	"github.com/mabzd/snorlax/pkg/dbm"
 	"github.com/mabzd/snorlax/pkg/rest"
 	"github.com/testcontainers/testcontainers-go"
@@ -31,19 +32,23 @@ func TestMain(m *testing.M) {
 	log.SetOutput(io.Discard)
 	ctx := context.Background()
 
-	req := testcontainers.ContainerRequest{
+	DB_USER := "postgres"
+	DB_PASS := "postgres"
+	DB_NAME := "testdb"
+
+	containerReq := testcontainers.ContainerRequest{
 		Image:        "postgres:15",
 		ExposedPorts: []string{"5432/tcp"},
 		Env: map[string]string{
-			"POSTGRES_USER":     "postgres",
-			"POSTGRES_PASSWORD": "postgres",
-			"POSTGRES_DB":       "stringdb",
+			"POSTGRES_USER":     DB_USER,
+			"POSTGRES_PASSWORD": DB_PASS,
+			"POSTGRES_DB":       DB_NAME,
 		},
 		WaitingFor: wait.ForListeningPort("5432/tcp").WithStartupTimeout(30 * time.Second),
 	}
 
 	dbContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
+		ContainerRequest: containerReq,
 		Started:          true,
 	})
 	if err != nil {
@@ -54,29 +59,38 @@ func TestMain(m *testing.M) {
 	}()
 
 	port, _ := dbContainer.MappedPort(ctx, "5432")
-	os.Setenv("DB_PORT", port.Port())
-	dbm.UpgradeDatabase()
-	handler := rest.NewServerHandler()
+	cfg := config.Config{
+		ApiPort:            "8080",
+		DbHost:             "localhost",
+		DbPort:             port.Port(),
+		DbUser:             DB_USER,
+		DbPass:             DB_PASS,
+		DbName:             DB_NAME,
+		ServerTimeoutInSec: 5,
+	}
+
+	dbm.UpgradeDatabaseIfNeeded(cfg)
+	handler := rest.NewServerHandler(cfg)
 	srv = httptest.NewServer(handler)
 	defer srv.Close()
 	code := m.Run()
 	os.Exit(code)
 }
 
-func prepareMinimalSleepDiaryData() api.SleepDiaryEntryDataDto {
-	sleepTime := time.Now().Add(time.Duration(-rand.Intn(24)) * time.Hour)
+func newMinimalRandomEntryData() api.SleepDiaryEntryDataDto {
+	sleepAt := time.Now().Add(time.Duration(-rand.Intn(24)) * time.Hour)
 	return api.SleepDiaryEntryDataDto{
-		TriedToSleepAt: sleepTime,
-		FinalWakeUpAt:  sleepTime.Add(time.Duration(rand.Intn(4)+6) * time.Hour),
+		TriedToSleepAt: sleepAt,
+		FinalWakeUpAt:  sleepAt.Add(time.Duration(rand.Intn(4)+6) * time.Hour),
 		SleepQuality:   api.ExcellentSleepQuality,
 	}
 }
 
-func prepareSleepDiaryData() api.SleepDiaryEntryDataDto {
-	return prepateSleepDiaryDataForSleepAt(time.Now())
+func newRandomEntryData() api.SleepDiaryEntryDataDto {
+	return newRandomEntryDataForSleepAt(time.Now())
 }
 
-func prepateSleepDiaryDataForSleepAt(sleepAt time.Time) api.SleepDiaryEntryDataDto {
+func newRandomEntryDataForSleepAt(sleepAt time.Time) api.SleepDiaryEntryDataDto {
 	wakeUpAt := sleepAt.Add(time.Duration(8+rand.Intn(4)) * time.Hour)
 	return api.SleepDiaryEntryDataDto{
 		InBedAt:                      toPtr(sleepAt.Add(time.Duration(-rand.Intn(60)) * time.Minute)),
@@ -91,7 +105,7 @@ func prepateSleepDiaryDataForSleepAt(sleepAt time.Time) api.SleepDiaryEntryDataD
 	}
 }
 
-func assertEqualSleepDiaryEntryDto(t *testing.T, expected api.SleepDiaryEntryDto, actual api.SleepDiaryEntryDto, compareVersion bool) {
+func assertEqualEntryDto(t *testing.T, expected api.SleepDiaryEntryDto, actual api.SleepDiaryEntryDto, compareVersion bool) {
 	assertValuesEqual(t, &expected.Id, &actual.Id, "Id")
 	assertValuesEqual(t, &expected.AccountUuid, &actual.AccountUuid, "AccountUuid")
 	assertValuesEqualTimeMsPrec(t, expected.InBedAt, actual.InBedAt, "InBedAt")
@@ -132,24 +146,24 @@ func assertValuesEqualTimeMsPrec(t *testing.T, expected *time.Time, actual *time
 }
 
 func mustCreateRandomEntry(t *testing.T) api.SleepDiaryEntryDto {
-	return mustCreateEntry(t, api.AddSleepDiaryEntryDto{
+	return mustCreateEntry(t, api.CreateSleepDiaryEntryDto{
 		AccountUuid:            uuid.NewString(),
-		SleepDiaryEntryDataDto: prepareSleepDiaryData(),
+		SleepDiaryEntryDataDto: newRandomEntryData(),
 	})
 }
 
-func mustCreateEntry(t *testing.T, dto api.AddSleepDiaryEntryDto) api.SleepDiaryEntryDto {
-	addResp := mustPost(t, "/sleep_diary/entries", dto)
-	defer addResp.Body.Close()
-	assertHttpStatusCode(t, http.StatusCreated, addResp)
-	return mustDecode[api.SleepDiaryEntryDto](addResp.Body)
+func mustCreateEntry(t *testing.T, dto api.CreateSleepDiaryEntryDto) api.SleepDiaryEntryDto {
+	resp := mustPost(t, "/sleep_diary/entries", dto)
+	defer resp.Body.Close()
+	assertHttpStatusCode(t, http.StatusCreated, resp)
+	return mustDecode[api.SleepDiaryEntryDto](resp.Body)
 }
 
 func mustGetEntryById(t *testing.T, id int64) api.SleepDiaryEntryDto {
-	getResp := mustGet(t, fmt.Sprintf("/sleep_diary/entries/%v", id))
-	defer getResp.Body.Close()
-	assertHttpStatusCode(t, http.StatusOK, getResp)
-	return mustDecode[api.SleepDiaryEntryDto](getResp.Body)
+	resp := mustGet(t, fmt.Sprintf("/sleep_diary/entries/%v", id))
+	defer resp.Body.Close()
+	assertHttpStatusCode(t, http.StatusOK, resp)
+	return mustDecode[api.SleepDiaryEntryDto](resp.Body)
 }
 
 func assertHttpStatusCode(t *testing.T, expectedStatusCode int, resp *http.Response) {

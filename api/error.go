@@ -17,14 +17,14 @@ type ErrorDto struct {
 
 type Error interface {
 	error
-	ToDto() ErrorDto
+	ToErrorDto() ErrorDto
 }
 
 func (e ErrorDto) Error() string {
 	return e.Message
 }
 
-func (e ErrorDto) ToDto() ErrorDto {
+func (e ErrorDto) ToErrorDto() ErrorDto {
 	return e
 }
 

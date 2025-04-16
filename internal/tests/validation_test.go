@@ -15,67 +15,67 @@ func TestEmptyData(t *testing.T) {
 }
 
 func TestInBedAtAndTriedToSleepAtNotInOrder(t *testing.T) {
-	data := prepareSleepDiaryData()
+	data := newRandomEntryData()
 	swap(data.InBedAt, &data.TriedToSleepAt)
 	runValidationTests(t, data)
 }
 
 func TestInBedAtAndFinalWakeUpAtNotInOrder(t *testing.T) {
-	data := prepareSleepDiaryData()
+	data := newRandomEntryData()
 	swap(data.InBedAt, &data.FinalWakeUpAt)
 	runValidationTests(t, data)
 }
 
 func TestInBedAtAndOutOfBedAtNotInOrder(t *testing.T) {
-	data := prepareSleepDiaryData()
+	data := newRandomEntryData()
 	swap(data.InBedAt, &data.FinalWakeUpAt)
 	runValidationTests(t, data)
 }
 
 func TestTriedToSleepAtAndFinalWakeUpAtNotInOrder(t *testing.T) {
-	data := prepareSleepDiaryData()
+	data := newRandomEntryData()
 	swap(&data.TriedToSleepAt, &data.FinalWakeUpAt)
 	runValidationTests(t, data)
 }
 
 func TestTriedToSleepAtAndOutOfBedAtNotInOrder(t *testing.T) {
-	data := prepareSleepDiaryData()
+	data := newRandomEntryData()
 	swap(&data.TriedToSleepAt, data.OutOfBedAt)
 	runValidationTests(t, data)
 }
 
 func TestFinalWakeUpAtAndOutOfBedAtNotInOrder(t *testing.T) {
-	data := prepareSleepDiaryData()
+	data := newRandomEntryData()
 	swap(&data.FinalWakeUpAt, data.OutOfBedAt)
 	runValidationTests(t, data)
 }
 
 func TestSleepQualityLowerBound(t *testing.T) {
-	data := prepareSleepDiaryData()
+	data := newRandomEntryData()
 	data.SleepQuality = api.VeryPoorSleepQuality - 1
 	runValidationTests(t, data)
 }
 
 func TestSleepQualityUpperBound(t *testing.T) {
-	data := prepareSleepDiaryData()
+	data := newRandomEntryData()
 	data.SleepQuality = api.ExcellentSleepQuality + 1
 	runValidationTests(t, data)
 }
 
 func TestNegativeSleepDelay(t *testing.T) {
-	data := prepareSleepDiaryData()
+	data := newRandomEntryData()
 	data.SleepDelayInMin = toPtr(-1)
 	runValidationTests(t, data)
 }
 
 func TestNegativeAwakeningsCount(t *testing.T) {
-	data := prepareSleepDiaryData()
+	data := newRandomEntryData()
 	data.AwakeningsCount = toPtr(-1)
 	runValidationTests(t, data)
 }
 
 func TestNegativeAwakeningsTotalDuration(t *testing.T) {
-	data := prepareSleepDiaryData()
+	data := newRandomEntryData()
 	data.AwakeningsTotalDurationInMin = toPtr(-1)
 	runValidationTests(t, data)
 }
@@ -86,26 +86,26 @@ func runValidationTests(t *testing.T, data api.SleepDiaryEntryDataDto) {
 }
 
 func runCreateAndAssertBadRequest(t *testing.T, data api.SleepDiaryEntryDataDto) {
-	addDto := api.AddSleepDiaryEntryDto{
+	createDto := api.CreateSleepDiaryEntryDto{
 		AccountUuid:            uuid.NewString(),
 		SleepDiaryEntryDataDto: data,
 	}
 
-	resp := mustPost(t, "/sleep_diary/entries", addDto)
+	resp := mustPost(t, "/sleep_diary/entries", createDto)
 	defer resp.Body.Close()
 	assertHttpStatusCode(t, http.StatusBadRequest, resp)
 }
 
 func runUpdateAndAssertBadRequest(t *testing.T, data api.SleepDiaryEntryDataDto) {
-	addDto := api.AddSleepDiaryEntryDto{
+	createDto := api.CreateSleepDiaryEntryDto{
 		AccountUuid:            uuid.NewString(),
-		SleepDiaryEntryDataDto: prepareSleepDiaryData(),
+		SleepDiaryEntryDataDto: newRandomEntryData(),
 	}
 
-	addResp := mustPost(t, "/sleep_diary/entries", addDto)
-	defer addResp.Body.Close()
-	assertHttpStatusCode(t, http.StatusCreated, addResp)
-	createdEntry := mustDecode[api.SleepDiaryEntryDto](addResp.Body)
+	createResp := mustPost(t, "/sleep_diary/entries", createDto)
+	defer createResp.Body.Close()
+	assertHttpStatusCode(t, http.StatusCreated, createResp)
+	createdEntry := mustDecode[api.SleepDiaryEntryDto](createResp.Body)
 
 	updateDto := api.UpdateSleepDiaryEntryDto{
 		Version:                &createdEntry.Version,
