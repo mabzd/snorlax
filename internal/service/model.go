@@ -61,7 +61,7 @@ func assignEntryToDto(src SleepDiaryEntry, dst *api.SleepDiaryEntryDataDto) erro
 		return err
 	}
 
-	dst.Timezone = src.Timezone
+	dst.Timezone = &src.Timezone
 	dst.InBedAt = fromNullTime(src.InBedAt, tz)
 	dst.TriedToSleepAt = src.TriedToSleepAt.In(tz)
 	dst.SleepDelayInMin = fromNullInt32(src.SleepDelayInMin)
@@ -75,7 +75,12 @@ func assignEntryToDto(src SleepDiaryEntry, dst *api.SleepDiaryEntryDataDto) erro
 }
 
 func assignDtoToEntry(src api.SleepDiaryEntryDataDto, dst *SleepDiaryEntry) {
-	dst.Timezone = src.Timezone
+	if src.Timezone == nil {
+		dst.Timezone = "UTC"
+	} else {
+		dst.Timezone = *src.Timezone
+	}
+
 	dst.InBedAt = toNullTime(src.InBedAt)
 	dst.TriedToSleepAt = src.TriedToSleepAt
 	dst.SleepDelayInMin = toNullInt32(src.SleepDelayInMin)

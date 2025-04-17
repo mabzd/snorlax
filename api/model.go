@@ -39,8 +39,8 @@ func (sq SleepQuality) String() string {
 }
 
 type SleepDiaryEntryDataDto struct {
-	Timezone                     string       `json:"timezone"`
-	InBedAt                      *time.Time   `json:"get_in_bed_at,omitempty"`
+	Timezone                     *string      `json:"timezone,omitempty"`
+	InBedAt                      *time.Time   `json:"in_bed_at,omitempty"`
 	TriedToSleepAt               time.Time    `json:"tried_to_sleep_at"`
 	SleepDelayInMin              *int         `json:"sleep_delay_in_min,omitempty"`
 	AwakeningsCount              *int         `json:"awakenings_count,omitempty"`
@@ -58,10 +58,11 @@ func (dto *SleepDiaryEntryDataDto) Validate() []error {
 		labeledTime{&dto.FinalWakeUpAt, "final_wake_up_at"},
 		labeledTime{dto.OutOfBedAt, "out_of_bed_at"},
 	)
-	if dto.Timezone == "" {
-		errors = append(errors, fmt.Errorf("timezone is required"))
+	timezone := "UTC"
+	if dto.Timezone != nil {
+		timezone = *dto.Timezone
 	}
-	_, err := time.LoadLocation(dto.Timezone)
+	_, err := time.LoadLocation(timezone)
 	if err != nil {
 		errors = append(errors, fmt.Errorf("timezone is not recognized"))
 	}

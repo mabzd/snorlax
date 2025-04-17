@@ -50,7 +50,7 @@ func TestCreateTimesGetConvertedToTargetTimezone(t *testing.T) {
 		t.Fatal("Could not load timezone")
 	}
 
-	dto.Timezone = tz.String()
+	dto.Timezone = toPtr(tz.String())
 	createdDto := mustCreateEntry(t, dto)
 
 	assertValuesEqualTimeMsPrec(t, toPtr(dto.InBedAt.In(tz)), createdDto.InBedAt, "InBedAt")

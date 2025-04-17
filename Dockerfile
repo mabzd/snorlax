@@ -16,4 +16,8 @@ COPY --from=builder /app/build .
 
 EXPOSE 8080
 
+# For the purpose of this showcase, we run the migration tool (dbm) directly
+# befre the service executable (api) to simplify setup and demonstration.
+# In a real production environment, migrations should be handled as a
+# separate deployment step in the CI/CD pipeline
 CMD ["sh", "-c", "./dbm.exe && ./api.exe"]

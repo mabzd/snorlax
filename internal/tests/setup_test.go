@@ -78,12 +78,10 @@ func TestMain(m *testing.M) {
 }
 
 func newMinimalRandomEntryData() api.SleepDiaryEntryDataDto {
-	tz := newRandomTimezone()
-	sleepAt := time.Now().Add(time.Duration(-rand.Intn(24)) * time.Hour)
+	sleepAt := time.Now().UTC().Add(time.Duration(-rand.Intn(24)) * time.Hour)
 	return api.SleepDiaryEntryDataDto{
-		Timezone:       tz.String(),
-		TriedToSleepAt: sleepAt.In(tz),
-		FinalWakeUpAt:  sleepAt.In(tz).Add(time.Duration(rand.Intn(4)+6) * time.Hour),
+		TriedToSleepAt: sleepAt,
+		FinalWakeUpAt:  sleepAt.Add(time.Duration(rand.Intn(4)+6) * time.Hour),
 		SleepQuality:   api.ExcellentSleepQuality,
 	}
 }
@@ -97,7 +95,7 @@ func newRandomEntryDataForSleepAt(sleepAt time.Time) api.SleepDiaryEntryDataDto 
 	tz := newRandomTimezone()
 	wakeUpAt := sleepAt.Add(time.Duration(8+rand.Intn(4)) * time.Hour)
 	return api.SleepDiaryEntryDataDto{
-		Timezone:                     tz.String(),
+		Timezone:                     toPtr(tz.String()),
 		InBedAt:                      toPtr(sleepAt.In(tz).Add(time.Duration(-rand.Intn(60)) * time.Minute)),
 		TriedToSleepAt:               sleepAt.In(tz),
 		SleepDelayInMin:              toPtr(rand.Intn(60)),
